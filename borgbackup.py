@@ -137,6 +137,7 @@ def prune_snapshots(now, snapshot_dir, snapshots): # Assumes snapshot dirnames e
 	for next_snapshot in wanted_snapshots:
 		target_timestamp = last_kept_timestamp - time_intervals[next_snapshot]
 		closest_timestamp = closest(target_timestamp, actual_timestamps)
+		actual_timestamps.remove(closest_timestamp)
 		keep_timestamps += [closest_timestamp]
 
 	for s in snapshots:
