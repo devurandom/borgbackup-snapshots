@@ -10,10 +10,7 @@ from time import time
 import psutil
 
 
-__dir = dirname(realpath(__file__))
-__borg = "{}/borg".format(__dir)
-__btrfs = "/usr/bin/btrfs"
-
+script_dir = dirname(realpath(__file__))
 
 time_intervals = {
 	"day": 60*60*24,
@@ -44,12 +41,12 @@ def remove_prefix(string, prefix):
 	return string[len(prefix):] if string.startswith(prefix) else string
 
 
-def subvolume_from_mountpoint(mountpoint):
+def subvolume_from_mountpoint(btrfs, mountpoint):
 	if not is_mountpoint(mountpoint):
 		raise RuntimeError("{} is not a mountpoint".format(mountpoint))
 
 	btrfs_subvolume_show = run(
-		[__btrfs, "subvolume", "show", mountpoint],
+		[btrfs, "subvolume", "show", mountpoint],
 		stdout=PIPE,
 		universal_newlines=True,
 		check=True,
@@ -65,11 +62,11 @@ def subvolume_name_from_subvolume(subvolume):
 	return name
 
 
-def snapshot(mountpoint, snapshot_dir):
+def snapshot(btrfs, mountpoint, snapshot_dir):
 	info("Snapshotting {} into {} ...".format(mountpoint, snapshot_dir))
 
 	run(
-		[__btrfs, "subvolume", "snapshot", "-r", mountpoint, snapshot_dir],
+		[btrfs, "subvolume", "snapshot", "-r", mountpoint, snapshot_dir],
 		check=True,
 	)
 
@@ -81,7 +78,7 @@ def backup(name, config, snapshot_dir):
 		snapshot_dir = config["mountpoint"]
 
 	command = [
-		__borg,
+		config["borg"],
 		"--show-rc",
 		"--show-version",
 		"create",
@@ -106,7 +103,7 @@ def prune_backups(name, config):
 	info("Pruning backups of {} in {} ...".format(config["mountpoint"], config["repository"]))
 
 	command = [
-		__borg,
+		config["borg"],
 		"--show-rc",
 		"--show-version",
 		"prune",
@@ -120,7 +117,7 @@ def prune_backups(name, config):
 	run(command, env=env, check=True)
 
 
-def prune_snapshots(now, snapshot_dir, snapshots): # Assumes snapshot dirnames end in ...-TIMESTAMP
+def prune_snapshots(btrfs, now, snapshot_dir, snapshots): # Assumes snapshot dirnames end in ...-TIMESTAMP
 	info("Pruning snapshots in {} ...".format(snapshot_dir))
 
 	daily=7
@@ -153,7 +150,7 @@ def prune_snapshots(now, snapshot_dir, snapshots): # Assumes snapshot dirnames e
 		t = int(generic_subvolume_regex.sub(r'\1', s))
 		if t not in keep_timestamps:
 			info("Pruning snapshot {} at timestamp {} ...".format(s, t))
-			command = [__btrfs, "subvolume", "delete", pathjoin(snapshot_dir, s)]
+			command = [btrfs, "subvolume", "delete", pathjoin(snapshot_dir, s)]
 			run(command, check=True)
 
 
@@ -169,6 +166,8 @@ if __name__ == '__main__':
 	arg_parser.add_argument('--log-level', default='info', choices=['critical', 'error', 'warning', 'info', 'debug'])
 	arg_parser.add_argument('--backup-only')
 	arg_parser.add_argument('--snapshot-dir', default=pathjoin(pathsep, "@snapshots"))
+	arg_parser.add_argument('--with-borg', default="{}/borg".format(script_dir))
+	arg_parser.add_argument('--with-btrfs', default="/usr/bin/btrfs")
 	arg_parser.add_argument('config_file', type=argparse.FileType('r'))
 	args = arg_parser.parse_args()
 
@@ -208,12 +207,13 @@ if __name__ == '__main__':
 			backup_config["repository"] = realpath(pathjoin(backup_dir, backup_config["repository"]))
 
 		backup_config["fstype"] = filesystem_type(backup_config["mountpoint"])
+		backup_config["borg"] = args.with_borg
 
 		if backup_config["fstype"] in snapshotable_fstypes:
-			backup_config["subvolume"] = subvolume_from_mountpoint(backup_config["mountpoint"])
+			backup_config["subvolume"] = subvolume_from_mountpoint(args.with_btrfs, backup_config["mountpoint"])
 			backup_config["subvolume_name"] = subvolume_name_from_subvolume(backup_config["subvolume"])
 			backup_config["snapshot"] = pathjoin(snapshot_dir, "{}-{}".format(backup_config["subvolume_name"], now))
-			snapshot(backup_config["mountpoint"], backup_config["snapshot"])
+			snapshot(args.with_btrfs, backup_config["mountpoint"], backup_config["snapshot"])
 		else:
 			m = "Filesystem type {} of mountpoint {} not supported, unable to create snapshot!".format(backup_config["fstype"], backup_config["mountpoint"])
 			messages += [m]
@@ -236,7 +236,7 @@ if __name__ == '__main__':
 		if backup_config["fstype"] in snapshotable_fstypes:
 			subvolume_regex = re.compile(r'^' + backup_config["subvolume_name"] + r'-(\d+)$')
 			snapshots = list(filter(lambda filename: subvolume_regex.match(filename), listdir(snapshot_dir)))
-			prune_snapshots(now, snapshot_dir, snapshots)
+			prune_snapshots(args.with_btrfs, now, snapshot_dir, snapshots)
 
 	info("Repeating all warnings:")
 	for m in messages:
