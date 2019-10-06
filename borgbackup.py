@@ -46,7 +46,7 @@ def remove_prefix(string, prefix):
 
 def subvolume_from_mountpoint(mountpoint):
 	if not is_mountpoint(mountpoint):
-		raise RuntimeException("{} is not a mountpoint".format(mountpoint))
+		raise RuntimeError("{} is not a mountpoint".format(mountpoint))
 
 	btrfs_subvolume_show = run(
 		[__btrfs, "subvolume", "show", mountpoint],
@@ -178,7 +178,7 @@ if __name__ == '__main__':
 
 	snapshot_dir = args.snapshot_dir
 	if not is_mountpoint(snapshot_dir):
-		raise RuntimeException("It is advised to make {} a mountpoint".format(mountpoint))
+		raise RuntimeError("It is advised to make {} a mountpoint".format(mountpoint))
 
 	debug("Loading config from {}".format(args.config_file.name))
 	config = json.loads(args.config_file.read())
