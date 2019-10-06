@@ -168,7 +168,7 @@ if __name__ == '__main__':
 	arg_parser = argparse.ArgumentParser(description='Create BTRFS snapshots and backup them using Borg')
 	arg_parser.add_argument('--log-level', default='info', choices=['critical', 'error', 'warning', 'info', 'debug'])
 	arg_parser.add_argument('--backup-only')
-	arg_parser.add_argument('--snapshot-dir', default=pathjoin(pathsep, "snapshots"))
+	arg_parser.add_argument('--snapshot-dir', default=pathjoin(pathsep, "@snapshots"))
 	arg_parser.add_argument('config_file', type=argparse.FileType('r'))
 	args = arg_parser.parse_args()
 
