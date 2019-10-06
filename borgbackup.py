@@ -23,6 +23,8 @@ time_intervals = {
 
 generic_subvolume_regex = re.compile(r'^.*-(\d+)$')
 
+snapshotable_fstypes = ("btrfs",)
+
 
 def closest(target, list):
 	best = 0
@@ -200,7 +202,7 @@ if __name__ == '__main__':
 
 		backup_config["fstype"] = filesystem_type(backup_config["mountpoint"])
 
-		if backup_config["fstype"] in ("btrfs",):
+		if backup_config["fstype"] in snapshotable_fstypes:
 			backup_config["subvolume"] = subvolume_from_mountpoint(backup_config["mountpoint"])
 			backup_config["snapshot"] = pathjoin(snapshot_dir, "{}-{}".format(backup_config["subvolume"], now))
 			snapshot(backup_config["mountpoint"], backup_config["snapshot"])
@@ -223,7 +225,7 @@ if __name__ == '__main__':
 
 		prune_backups(name, backup_config)
 
-		if backup_config["fstype"] in ("btrfs",):
+		if backup_config["fstype"] in snapshotable_fstypes:
 			subvolume_regex = re.compile(r'^' + backup_config["subvolume"] + r'-(\d+)$')
 			snapshots = list(filter(lambda filename: subvolume_regex.match(filename), listdir(snapshot_dir)))
 			prune_snapshots(now, snapshot_dir, snapshots)
