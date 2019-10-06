@@ -92,6 +92,8 @@ def backup(name, config, snapshot_dir):
 		"::{hostname}-{utcnow}",
 		"."
 	]
+	if config["nice"]:
+		command = ["ionice", "-c3", "nice", "-n10"] + command
 	env = {**os.environ, "BORG_REPO": config["repository"]}
 	result = run(command, cwd=snapshot_dir, env=env)
 	if result.returncode != 0:
@@ -113,6 +115,8 @@ def prune_backups(name, config):
 		"--keep-weekly=4",
 		"--keep-monthly=6",
 	]
+	if config["nice"]:
+		command = ["ionice", "-c3", "nice", "-n10"] + command
 	env = {**os.environ, "BORG_REPO": config["repository"]}
 	run(command, env=env, check=True)
 
@@ -168,6 +172,7 @@ if __name__ == '__main__':
 	arg_parser.add_argument('--snapshot-dir', default=pathjoin(pathsep, "@snapshots"))
 	arg_parser.add_argument('--with-borg', default="{}/borg".format(script_dir))
 	arg_parser.add_argument('--with-btrfs', default="/usr/bin/btrfs")
+	arg_parser.add_argument('--nice', type=bool)
 	arg_parser.add_argument('config_file', type=argparse.FileType('r'))
 	args = arg_parser.parse_args()
 
@@ -208,6 +213,7 @@ if __name__ == '__main__':
 
 		backup_config["fstype"] = filesystem_type(backup_config["mountpoint"])
 		backup_config["borg"] = args.with_borg
+		backup_config["nice"] = args.nice
 
 		if backup_config["fstype"] in snapshotable_fstypes:
 			backup_config["subvolume"] = subvolume_from_mountpoint(args.with_btrfs, backup_config["mountpoint"])
