@@ -178,7 +178,7 @@ if __name__ == '__main__':
 
 	snapshot_dir = args.snapshot_dir
 	if not is_mountpoint(snapshot_dir):
-		raise RuntimeError("It is advised to make {} a mountpoint".format(mountpoint))
+		raise RuntimeError("It is advised to make {} a mountpoint".format(snapshot_dir))
 
 	debug("Loading config from {}".format(args.config_file.name))
 	config = json.loads(args.config_file.read())
