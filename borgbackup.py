@@ -58,6 +58,13 @@ def subvolume_from_mountpoint(mountpoint):
 	return btrfs_subvolume_show.stdout.splitlines()[0]
 
 
+def subvolume_name_from_subvolume(subvolume):
+	name = subvolume.replace("/", "_")
+	if name == "_":
+		name = "ROOT"
+	return name
+
+
 def snapshot(mountpoint, snapshot_dir):
 	info("Snapshotting {} into {} ...".format(mountpoint, snapshot_dir))
 
@@ -204,7 +211,8 @@ if __name__ == '__main__':
 
 		if backup_config["fstype"] in snapshotable_fstypes:
 			backup_config["subvolume"] = subvolume_from_mountpoint(backup_config["mountpoint"])
-			backup_config["snapshot"] = pathjoin(snapshot_dir, "{}-{}".format(backup_config["subvolume"], now))
+			backup_config["subvolume_name"] = subvolume_name_from_subvolume(backup_config["subvolume"])
+			backup_config["snapshot"] = pathjoin(snapshot_dir, "{}-{}".format(backup_config["subvolume_name"], now))
 			snapshot(backup_config["mountpoint"], backup_config["snapshot"])
 		else:
 			m = "Filesystem type {} of mountpoint {} not supported, unable to create snapshot!".format(backup_config["fstype"], backup_config["mountpoint"])
@@ -226,7 +234,7 @@ if __name__ == '__main__':
 		prune_backups(name, backup_config)
 
 		if backup_config["fstype"] in snapshotable_fstypes:
-			subvolume_regex = re.compile(r'^' + backup_config["subvolume"] + r'-(\d+)$')
+			subvolume_regex = re.compile(r'^' + backup_config["subvolume_name"] + r'-(\d+)$')
 			snapshots = list(filter(lambda filename: subvolume_regex.match(filename), listdir(snapshot_dir)))
 			prune_snapshots(now, snapshot_dir, snapshots)
 
