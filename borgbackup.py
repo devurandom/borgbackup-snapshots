@@ -147,6 +147,9 @@ def prune_snapshots(btrfs, now, snapshot_dir, snapshots): # Assumes snapshot dir
 	for next_snapshot in wanted_snapshots:
 		target_timestamp = last_kept_timestamp - time_intervals[next_snapshot]
 		closest_timestamp = closest(target_timestamp, actual_timestamps)
+		if not closest_timestamp:
+			break
+		debug("Found {} as candidate for {} in {}".format(closest_timestamp, target_timestamp, actual_timestamps))
 		actual_timestamps.remove(closest_timestamp)
 		keep_timestamps += [closest_timestamp]
 
