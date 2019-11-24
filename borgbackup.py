@@ -168,6 +168,13 @@ def filesystem_type(mountpoint):
 	return partitions[0].fstype
 
 
+def log_level(name):
+	numeric_log_level = getattr(logging, name.upper(), None)
+	if not isinstance(numeric_log_level, int):
+		raise ValueError('Invalid log level: %s' % name)
+	return numeric_log_level
+
+
 if __name__ == '__main__':
 	arg_parser = argparse.ArgumentParser(description='Create BTRFS snapshots and backup them using Borg')
 	arg_parser.add_argument('--log-level', default='info', choices=['critical', 'error', 'warning', 'info', 'debug'])
@@ -179,13 +186,14 @@ if __name__ == '__main__':
 	arg_parser.add_argument('config_file', type=argparse.FileType('r'))
 	args = arg_parser.parse_args()
 
+	numeric_log_level = log_level(args.log_level)
+	logging.basicConfig(level=numeric_log_level)
+	atexit.register(logging.shutdown)
+
 	debug("Running Python: {}".format(sys.version))
 
 	if args.backup_only:
 		args.backup_only = [item for item in args.backup_only.split(',')]
-
-	logging.basicConfig(level=logging.getLevelName(args.log_level.upper()))
-	atexit.register(logging.shutdown)
 
 	backup_dir = dirname(realpath(args.config_file.name))
 	debug("Backing up into {}".format(backup_dir))
