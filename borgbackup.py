@@ -1,4 +1,4 @@
-#!/usr/bin/python3.6
+#!/usr/bin/python3
 
 import sys, os, re, logging, atexit, json, argparse, pathlib
 from logging import info, warn, debug
