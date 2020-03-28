@@ -22,6 +22,7 @@ generic_subvolume_regex = re.compile(r'^.*-(\d+)$')
 
 snapshotable_fstypes = ("btrfs",)
 
+compression_algorithm = "zstd"
 
 def closest(target, list):
 	best = 0
@@ -85,7 +86,7 @@ def backup(name, config, snapshot_dir):
 		"--list",
 		"--filter=E",
 		"--stats",
-		"--compression=lz4",
+		"--compression=" + compression_algorithm,
 		"--one-file-system",
 		"--exclude-caches",
 	] + ["--exclude=" + v for v in config["excludes"]] + [
