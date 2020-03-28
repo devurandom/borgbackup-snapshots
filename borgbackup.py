@@ -24,6 +24,10 @@ snapshotable_fstypes = ("btrfs",)
 
 compression_algorithm = "zstd"
 
+keep_daily = 7
+keep_weekly = 4
+keep_monthly = 6
+
 def closest(target, list):
 	best = 0
 	best_distance = target
@@ -112,9 +116,9 @@ def prune_backups(name, config):
 		"prune",
 		"--list",
 		"--prefix={hostname}-",
-		"--keep-daily=7",
-		"--keep-weekly=4",
-		"--keep-monthly=6",
+		"--keep-daily=" + keep_daily,
+		"--keep-weekly=" + keep_weekly,
+		"--keep-monthly=" + keep_monthly,
 	]
 	if config["nice"]:
 		command = ["ionice", "-c3", "nice", "-n10"] + command
@@ -125,16 +129,12 @@ def prune_backups(name, config):
 def prune_snapshots(btrfs, now, snapshot_dir, snapshots): # Assumes snapshot dirnames end in ...-TIMESTAMP
 	info("Pruning snapshots in {} ...".format(snapshot_dir))
 
-	daily=7
-	weekly=4
-	monthly=6
-
 	wanted_snapshots = []
-	for _ in range(daily):
+	for _ in range(keep_daily):
 		wanted_snapshots += ["day"]
-	for _ in range(weekly):
+	for _ in range(keep_weekly):
 		wanted_snapshots += ["week"]
-	for _ in range(monthly):
+	for _ in range(keep_monthly):
 		wanted_snapshots += ["month"]
 
 	actual_timestamps = []
